@@ -14,7 +14,7 @@ public class WebDriverSettings {
     @Before
     public void setupBellTest(){
         System.out.println("Before");
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\Ouan\\ChromeDriver\\chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "webDriver\\chromedriver.exe");
         driver = new ChromeDriver();
         driver.manage().window().maximize(); // окно на весь экран драйвером
         driver.manage().timeouts().pageLoadTimeout(timeOut, TimeUnit.SECONDS); // ждет загрузки страницы
