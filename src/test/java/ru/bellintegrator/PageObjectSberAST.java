@@ -8,6 +8,7 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,9 +23,11 @@ public class PageObjectSberAST {
     private int resultsChecked = 0;
     private final String contractType = "Госзакупки по 44-ФЗ";
     private final String resultsFullLocator = "//div[@content = 'node:hits']";
-    private final String resultsMoneyLocator = "//span[@format = 'money']";
-    private final String resultsNumberLocator = "//span[@content = 'leaf:purchCodeTerm']";
-    private final String resultsLinkLocator = "//input[@content = 'leaf:objectHrefTerm']";
+    private final String resultsMoneyLocator = "descendant::span[@format = 'money']";
+    private final String resultsNumberLocator = "descendant::span[@content = 'leaf:purchCodeTerm']";
+    private final String resultsLinkLocator = "descendant::input[@content = 'leaf:objectHrefTerm']";
+    private List<String> resultsNumbersStr = new ArrayList<>();
+    private List<WebElement> resultsTest;
 
     @FindBy(how = How.CSS, using = ".SearchIco")
     private WebElement searchPageButton;
@@ -40,6 +43,9 @@ public class PageObjectSberAST {
 
     @FindAll(@FindBy(how = How.XPATH, using = resultsFullLocator))
     private List<WebElement> results;
+
+    @FindAll(@FindBy(how = How.XPATH, using = resultsNumberLocator))
+    private List<WebElement> resultsNumber;
 
     @FindBy(how = How.XPATH, using = "//span[text() = '>']")
     private WebElement nextPageButton;
@@ -65,22 +71,18 @@ public class PageObjectSberAST {
     }
 
     //поиск запроса с отображением по 100 результатов на страницу
-    public void find(String findRequest){
-        wait.until(ExpectedConditions.elementToBeClickable(pageSize));
-        pageSize.click();
-        pageSizeOption100.click();
-        searchField.sendKeys(findRequest + Keys.ENTER);
-    }
+        public void find(String findRequest){
+            wait.until(ExpectedConditions.elementToBeClickable(pageSize));
+            pageSize.click();
+            pageSizeOption100.click();
+            searchField.sendKeys(findRequest + Keys.ENTER);
+        }
 
     //метод, используемый для дебага! Не использовать в конечном тесте
     public void testMethod() {
-        wait.until(CustomConditions.jsReturnsThisValue("return document.readyState","complete"));
-        wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(By.xpath(resultsFullLocator),90));
-        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath(resultsFullLocator)));
-        results.stream()
-                .map(WebElement::getText)
-                .forEach(System.out::println);
-        System.out.println(results.size());
+        System.out.println(requiredResults.get(0).findElement(By.xpath(resultsMoneyLocator)).getText());
+        System.out.println(requiredResults.get(1).findElement(By.xpath(resultsMoneyLocator)).getText());
+        System.out.println(requiredResults.get(2).findElement(By.xpath(resultsMoneyLocator)).getText());
     }
 
     //сбор полученных результатов в List, с учетом фильтра по типу контракта
@@ -96,13 +98,13 @@ public class PageObjectSberAST {
     private Integer rublesToInt(String str) {
         str = str.replaceAll(" ", "");
         str = str.substring(0, str.indexOf("."));
-        System.out.println(str);                                //удалить после дебага
         return Integer.valueOf(str);
     }
 
     //получение Map с номером закупки и ссылкой на неё
     public Map<String,String> getCheckedResults() {
         return requiredResults.stream()
+                //ограничение на максимальное количество проверяемых контрактов
                 .limit(primaryResultsNeeded - resultsChecked)
                 //проверка на соответствие минимальной цене контракта в рублях
                 .filter(result -> rublesToInt(result.findElement(By.xpath(resultsMoneyLocator))
@@ -125,7 +127,6 @@ public class PageObjectSberAST {
 
     //проверка на необходимость дальнейшего поиска результатов
     public boolean isEnoughResults() {
-        System.out.println(resultsChecked);                         //удалить после дебага
         return resultsChecked >= primaryResultsNeeded;
     }
 
